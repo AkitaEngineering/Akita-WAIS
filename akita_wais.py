@@ -212,12 +212,12 @@ class AkitaWAISClient:
         packet = R.Transport.await_packet(self.server_destination, 10)
         if packet:
             response = json.loads(packet["content"].decode("utf-8"))
-                if "results" in response:
-                    print("Search results:")
-                    for result in response["results"]:
-                        print(f"- {result}")
-                else:
-                    print(f"Error: {response.get('error')}")
+            if "results" in response: # Corrected indentation
+                print("Search results:")
+                for result in response["results"]:
+                    print(f"- {result}")
+            else: # Corrected indentation
+                print(f"Error: {response.get('error')}")
         else:
             print('Server timed out')
 
