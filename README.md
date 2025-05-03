@@ -1,65 +1,78 @@
 # Akita WAIS for Reticulum
 
-Akita WAIS is a decentralized Wide Area Information Server (WAIS) implementation designed for the Reticulum network. It allows users to discover, browse, and retrieve files from servers across the Reticulum mesh.
+Akita WAIS is a decentralized Wide Area Information Server (WAIS) implementation designed for the Reticulum network stack. It allows users to discover, browse, search (filenames), and retrieve files from servers across a Reticulum mesh.
+
+**Organization:** Akita Engineering (www.akitaengineering.com)
+**License:** GPLv3
 
 ## Features
 
-* **Decentralized Server Discovery:** Servers automatically announce their presence, and clients discover them through Reticulum's group messaging.
-* **Server List Sharing:** Servers share their discovered server lists, enabling clients to find other servers through a connected server.
-* **Text and Binary File Support:** Handles both text and binary files, with robust encoding handling.
-* **Search Functionality:** Clients can search for files on servers using keywords.
-* **Simple Command-Line Interface:** Easy-to-use client interface for browsing and retrieving files.
-* **Timeout Handling:** Prevents client hangs by implementing request timeouts.
-* **Reticulum Integration:** Leverages Reticulum's reliable and efficient networking capabilities.
+* **Decentralized Server Discovery:** Servers automatically announce their presence using Reticulum Announce; clients automatically discover them.
+* **Reliable Communication:** Uses Reticulum Links for robust request/response handling and file transfers.
+* **Peer List Sharing:** Servers can share their list of discovered peers (other servers).
+* **Text and Binary File Support:** Handles file transfers correctly using raw byte streams over Links. Supports basic chunking for larger files.
+* **Filename Search:** Clients can search for files on servers based on keywords matching filenames.
+* **Command-Line Interface:** Simple interactive client menu.
+* **Configurable:** Uses a configuration file (`config.json`) and command-line arguments.
+* **Persistent Identities:** Server and client Reticulum identities are saved and loaded.
+* **Server Caching:** Client caches discovered servers locally.
 
 ## Requirements
 
-* Reticulum installed and configured.
-* Python 3.
+* Linux Operating System (tested, other OS may work)
+* Python 3.7+
+* Reticulum Network Stack (`rns`) installed and running (`pip install rns`). See [Reticulum Documentation](https://reticulum.network/manual/) for setup.
+* Dependencies: `pip install -r requirements.txt`
 
 ## Installation
 
-1.  **Clone or Download:** Download the `akita_wais.py` script.
-2.  **Reticulum:** Ensure Reticulum is running on your system.
+1.  **Clone the Repository:**
+    ```bash
+    git clone [https://github.com/AkitaEngineering/Akita-WAIS.git](https://github.com/AkitaEngineering/Akita-WAIS.git)
+    cd Akita-WAIS
+    ```
+2.  **Install Dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  **Ensure Reticulum is Running:** Make sure `rnsd` is configured with appropriate interfaces (e.g., AutoInterface for LAN) and running on your system.
+4.  **Configure Akita WAIS:** Copy `config.example.json` to `config.json` and customize settings like server name, data directory, identity paths if desired.
 
 ## Usage
 
-### Running a Server
+**Running a Server:**
 
-1.  **Create `wais_data` Directory:** Create a directory named `wais_data` in the same location as `akita_wais.py`.
-2.  **Place Files:** Put the files you want to share in the `wais_data` directory.
-3.  **Start Server:** Run the following command:
-
+1.  **Create Data Directory:** If it doesn't exist, the directory specified in `config.json` (default: `wais_data`) will be created.
+2.  **Place Files:** Put files you want to share into the data directory.
+3.  **Start Server:**
     ```bash
-    python akita_wais.py server
+    python run.py server
     ```
+    * Use `python run.py server --no-announce` to run without announcing (for testing).
 
-### Running a Client
+**Running a Client:**
 
-1.  **Start Client:** Run the following command:
-
+1.  **Start Client:**
     ```bash
-    python akita_wais.py
+    python run.py client
     ```
-
-2.  **Follow the Menu:** The client will display a menu with options to discover servers, list files, retrieve files, search, and more.
-
-## Client Menu Options
-
-* **List files:** Lists the files available on the selected server.
-* **Get file:** Retrieves a specific file from the server.
-* **Search files:** Searches for files on the server using keywords.
-* **Get server list:** Displays the servers known by the currently connected server.
-* **Select another Server:** Allows you to choose a different server from the discovered list.
-* **Exit:** Closes the client.
+2.  **Follow Menu:**
+    * The client will automatically listen for server announcements.
+    * Use `List Discovered Servers` to see available servers.
+    * Use `Select Server` to connect to a server using its number from the list.
+    * Once connected, use other options (`List Files`, `Get File`, etc.) to interact with the server.
 
 ## Notes
 
-* Ensure that Reticulum is properly configured and running on all devices.
-* The `wais_data` directory on each server contains the files that will be shared.
-* When binary files are sent, they are sent as latin-1 encoded strings.
-* The client uses a 10 second timeout for requests to the servers.
+* Ensure Reticulum (`rnsd`) is properly configured and running on all participating nodes.
+* The `wais_data` directory (or as configured) on the server contains the shared files.
+* File transfers send raw binary data. Large files are sent in chunks managed by Reticulum Links.
+* Client discovery happens passively in the background. Listing servers shows the current cache.
 
 ## Contributing
 
-Contributions are welcome! Feel free to submit pull requests or open issues for bug reports or feature requests.
+Contributions are welcome! Please feel free to submit pull requests or open issues for bug reports or feature requests.
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
