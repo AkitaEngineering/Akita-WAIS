@@ -1,0 +1,2 @@
+Reticulum>=0.9.0
+# Add pyyaml if you prefer YAML for config
