@@ -62,6 +62,133 @@ Akita WAIS is a decentralized Wide Area Information Server (WAIS) implementation
     * Use `Select Server` to connect to a server using its number from the list.
     * Once connected, use other options (`List Files`, `Get File`, etc.) to interact with the server.
 
+## Terminal 1: Running the Server
+
+```Bash
+user@server-box:~/Akita-WAIS$ python run.py server --config config.json
+
+2025-05-04 14:00:15 INFO [AkitaCommon] Loaded configuration from config.json
+2025-05-04 14:00:15 INFO [AkitaCommon] Reticulum checksum: rns-9a8f7b...
+2025-05-04 14:00:15 INFO [AkitaCommon] Loaded Identity a1b2c3d4... from akita_server.identity
+2025-05-04 14:00:15 INFO [AkitaServer] Creating data directory: wais_data
+2025-05-04 14:00:16 INFO [AkitaServer] Listening for peer announcements on aspect: akita.wais.discovery.v1
+2025-05-04 14:00:16 INFO [AkitaServer] Akita WAIS Server Service Ready.
+2025-05-04 14:00:16 INFO [AkitaServer] Service Destination: a1b2c3d4... (Aspect: akita.wais.service.v1)
+2025-05-04 14:00:16 INFO [AkitaServer] Share Directory: /home/user/Akita-WAIS/wais_data
+2025-05-04 14:00:16 INFO [AkitaServer] Starting announcements every 60 seconds.
+2025-05-04 14:00:16 DEBUG [AkitaServer] Announcing service destination a1b2c3d4...
+2025-05-04 14:00:16 INFO [AkitaCommon] Server started. Press Ctrl+C to exit.
+# --- Server sits idle, waiting for connections or announces ---
+2025-05-04 14:01:16 DEBUG [AkitaServer] Announcing service destination a1b2c3d4...
+2025-05-04 14:02:05 INFO [AkitaServer] Link established from e5f6a7b8...
+2025-05-04 14:02:06 INFO [AkitaServer] Received action 'list' from e5f6a7b8...
+2025-05-04 14:02:06 DEBUG [AkitaServer] Sent response for action 'list'
+2025-05-04 14:02:15 INFO [AkitaServer] Received action 'get' from e5f6a7b8...
+2025-05-04 14:02:15 DEBUG [AkitaServer] Sent metadata for project_plan.txt, size 12345
+2025-05-04 14:02:15 DEBUG [AkitaServer] Sending chunk of size 8192 for project_plan.txt
+2025-05-04 14:02:15 DEBUG [AkitaServer] Sending chunk of size 4153 for project_plan.txt
+2025-05-04 14:02:15 INFO [AkitaServer] Finished sending file: project_plan.txt
+2025-05-04 14:02:20 INFO [AkitaServer] Link closed from e5f6a7b8...
+```
+## Terminal 2: Running the Client
+```Bash
+user@client-box:~/Akita-WAIS$ python run.py client --config config.json
+
+2025-05-04 14:01:30 INFO [AkitaCommon] Loaded configuration from config.json
+2025-05-04 14:01:30 INFO [AkitaCommon] Reticulum checksum: rns-9a8f7b...
+2025-05-04 14:01:31 INFO [AkitaCommon] Loaded Identity e5f6a7b8... from akita_client.identity
+2025-05-04 14:01:31 INFO [AkitaClient] Loaded 0 servers from cache: known_servers.cache
+2025-05-04 14:01:31 INFO [AkitaClient] Listening for server announcements on aspect: akita.wais.discovery.v1
+2025-05-04 14:01:31 INFO [AkitaClient] Akita WAIS Client Ready.
+
+Welcome to Akita WAIS Client!
+
+--- Client Menu ---
+1. List Discovered Servers
+2. Select Server
+0. Exit
+Enter choice:  # <-- Waiting for input
+# --- An announcement arrives in the background ---
+2025-05-04 14:01:45 INFO [AkitaClient] Discovered server: My Akita WAIS Server (a1b2c3d4...)
+
+# --- User types '1' ---
+Enter choice: 1
+
+--- Discovered Servers ---
+1. My Akita WAIS Server (a1b2c3d4...) - Seen 5s ago
+   Desc: Shares files over Reticulum.
+-------------------------
+
+--- Client Menu ---
+1. List Discovered Servers
+2. Select Server
+0. Exit
+Enter choice: 2
+Select server number to connect to: 1
+2025-05-04 14:02:05 INFO [AkitaClient] Selected server: My Akita WAIS Server (a1b2c3d4...)
+2025-05-04 14:02:05 INFO [AkitaClient] Attempting to establish link to a1b2c3d4... (Aspect: akita.wais.service.v1)
+2025-05-04 14:02:05 INFO [AkitaClient] Link established successfully.
+
+--- Client Menu ---
+Connected to: My Akita WAIS Server (a1b2c3d4...)
+1. List Files (on server)
+2. Get File (from server)
+3. Search Files (on server)
+4. List Peers (known by server)
+5. Disconnect from Server
+--------------------
+6. List Discovered Servers
+7. Select Different Server
+0. Exit
+Enter choice: 1
+
+Requesting file list...
+2025-05-04 14:02:06 DEBUG [AkitaClient] Sent request (ID: <req_id_1>): {'action': 'list'}
+2025-05-04 14:02:06 DEBUG [AkitaClient] Received response for request <req_id_1>
+Files:
+- project_plan.txt
+- results_data.csv
+- image.jpg
+
+--- Client Menu ---
+Connected to: My Akita WAIS Server (a1b2c3d4...)
+# ... (menu repeats) ...
+Enter choice: 2
+Enter filename to get: project_plan.txt
+
+Requesting file 'project_plan.txt'...
+2025-05-04 14:02:15 DEBUG [AkitaClient] Sent request (ID: <req_id_2>): {'action': 'get', 'filename': 'project_plan.txt'}
+2025-05-04 14:02:15 DEBUG [AkitaClient] Received response for request <req_id_2>
+2025-05-04 14:02:15 INFO [AkitaClient] Expecting file data for project_plan.txt (12345 bytes)
+2025-05-04 14:02:15 DEBUG [AkitaClient] Received 8192 bytes of raw data.
+2025-05-04 14:02:15 DEBUG [AkitaClient] Written 8192 bytes to project_plan.txt. Total: 8192/12345
+2025-05-04 14:02:15 DEBUG [AkitaClient] Received 4153 bytes of raw data.
+2025-05-04 14:02:15 DEBUG [AkitaClient] Written 4153 bytes to project_plan.txt. Total: 12345/12345
+2025-05-04 14:02:15 INFO [AkitaClient] File transfer complete for project_plan.txt
+2025-05-04 14:02:15 DEBUG [AkitaClient] Received response for request <req_id_2> # This is the completion signal
+Transfer final status: ok, Message: File 'project_plan.txt' received.
+
+--- Client Menu ---
+Connected to: My Akita WAIS Server (a1b2c3d4...)
+# ... (menu repeats) ...
+Enter choice: 5
+2025-05-04 14:02:20 INFO [AkitaClient] Closing active link to a1b2c3d4...
+2025-05-04 14:02:20 WARNING [AkitaClient] Link closed to server a1b2c3d4...
+Disconnected.
+
+--- Client Menu ---
+1. List Discovered Servers
+2. Select Server
+0. Exit
+Enter choice: 0
+2025-05-04 14:02:25 INFO [AkitaCommon] Shutdown requested.
+2025-05-04 14:02:25 INFO [AkitaClient] Stopped discovery listener.
+2025-05-04 14:02:25 INFO [AkitaClient] Saved 1 servers to cache: known_servers.cache
+2025-05-04 14:02:25 INFO [AkitaClient] Akita WAIS Client stopping.
+2025-05-04 14:02:25 INFO [AkitaCommon] Exiting.
+user@client-box:~/Akita-WAIS$
+```
+
 ## Notes
 
 * Ensure Reticulum (`rnsd`) is properly configured and running on all participating nodes.
