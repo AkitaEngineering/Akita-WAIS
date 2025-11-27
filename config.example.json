@@ -1,30 +1,30 @@
 {
   "reticulum": {
-    "config_dir": null // Let Reticulum use its default ~/.reticulum
+    "config_dir": null
   },
   "logging": {
-    "level": "INFO" // DEBUG, INFO, WARNING, ERROR, CRITICAL
+    "level": "INFO"
   },
   "identity": {
-    // Relative paths are relative to where the script is run or use absolute paths
     "server_identity_path": "akita_server.identity",
     "client_identity_path": "akita_client.identity"
   },
   "discovery": {
-    "aspect": "akita.wais.discovery.v1" // Aspect for announce/discovery
+    "aspect": "akita.wais.discovery.v1"
   },
   "server": {
     "data_dir": "wais_data",
-    "service_aspect": "akita.wais.service.v1", // Aspect for direct service requests
+    "service_aspect": "akita.wais.service.v1",
     "announce_interval_sec": 60,
     "server_info": {
-        "name": "My Akita WAIS Server", // Customize this!
-        "description": "Shares files over Reticulum.",
-        "keywords": ["files", "data", "akita"]
+        "name": "Default Akita Server",
+        "description": "Secure WAIS Server",
+        "keywords": ["files", "akita"]
     }
   },
   "client": {
-    "request_timeout_sec": 20,
-    "server_cache_path": "known_servers.cache" // Persist discovered servers
+    "request_timeout_sec": 30,
+    "server_cache_path": "known_servers.cache"
   }
+}
 }
