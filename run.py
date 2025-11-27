@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-# Simple script to run the Akita WAIS CLI
+# Akita WAIS Launcher
+# Organization: Akita Engineering
+# License: GPLv3
 
 import sys
-# Ensure the akita_wais package is importable (adjust if needed based on installation)
-# If installed via setup.py, this might not be necessary.
-# If running directly from the source directory, it should work.
+import os
+
+# Ensure the package is in path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from akita_wais import cli
 
 if __name__ == "__main__":
