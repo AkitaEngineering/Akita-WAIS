@@ -10,12 +10,8 @@ def load_or_create_identity(identity_path):
             if identity:
                 common_log.info(f"Loaded Identity {identity.hash} from {identity_path}")
                 return identity
-            else:
-                 common_log.error(f"Could not load Identity from {identity_path}, file might be corrupt.")
-                 # Fall through to create a new one
         except Exception as e:
             common_log.error(f"Error loading identity from {identity_path}: {e}")
-            # Fall through to create a new one
 
     common_log.info(f"No valid identity found at {identity_path}, creating new one.")
     try:
@@ -24,5 +20,5 @@ def load_or_create_identity(identity_path):
         common_log.info(f"Created and saved new Identity {identity.hash} to {identity_path}")
         return identity
     except Exception as e:
-        common_log.error(f"Could not save new identity to {identity_path}: {e}", exc_info=True)
-        return None # Critical error
+        common_log.error(f"Could not save new identity to {identity_path}: {e}")
+        return None
