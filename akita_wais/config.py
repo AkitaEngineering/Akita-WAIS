@@ -1,5 +1,6 @@
 import json
 import os
+import copy
 from .common import common_log
 
 DEFAULT_CONFIG = {
@@ -26,18 +27,19 @@ DEFAULT_CONFIG = {
 }
 
 def load_config(config_path="config.json"):
-    config = DEFAULT_CONFIG.copy()
-    if config_path and os.path.exists(config_path):
-        try:
-            with open(config_path, 'r') as f:
-                user_config = json.load(f)
-                # Shallow update of sections
-                for section, settings in user_config.items():
-                    if section in config and isinstance(settings, dict):
-                        config[section].update(settings)
-                    else:
-                        config[section] = settings
-            common_log.info(f"Loaded configuration from {config_path}")
-        except Exception as e:
-            common_log.error(f"Error loading config file {config_path}: {e}. Using defaults.")
-    return config
+  # Use a deep copy so nested defaults aren't mutated when merging user config
+  config = copy.deepcopy(DEFAULT_CONFIG)
+  if config_path and os.path.exists(config_path):
+    try:
+      with open(config_path, 'r') as f:
+        user_config = json.load(f)
+        # Shallow update of sections
+        for section, settings in user_config.items():
+          if section in config and isinstance(settings, dict):
+            config[section].update(settings)
+          else:
+            config[section] = settings
+      common_log.info(f"Loaded configuration from {config_path}")
+    except Exception as e:
+      common_log.error(f"Error loading config file {config_path}: {e}. Using defaults.")
+  return config

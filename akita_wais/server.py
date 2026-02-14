@@ -154,10 +154,23 @@ class AkitaWAISServer:
     def _handle_get_request(self, link, request_id, filename):
         filepath = os.path.join(self.server_config['data_dir'], filename)
         
-        # Security check
-        if not os.path.abspath(filepath).startswith(os.path.abspath(self.server_config['data_dir'])):
-             link.respond(request_id, json.dumps({"status": STATUS_ERROR, "message": "Access denied"}).encode('utf-8'))
-             return
+        # Security check: prevent path traversal and ensure file is inside data_dir
+        data_dir_abs = os.path.abspath(self.server_config['data_dir'])
+        filepath_abs = os.path.abspath(filepath)
+        # Ensure filename is not a path (no directory traversal)
+        if os.path.basename(filename) != filename:
+            link.respond(request_id, json.dumps({"status": STATUS_ERROR, "message": "Invalid filename"}).encode('utf-8'))
+            return
+
+        # Use commonpath to ensure the file is inside the data directory
+        try:
+            common = os.path.commonpath([filepath_abs, data_dir_abs])
+        except ValueError:
+            common = ''
+
+        if common != data_dir_abs:
+            link.respond(request_id, json.dumps({"status": STATUS_ERROR, "message": "Access denied"}).encode('utf-8'))
+            return
 
         if not filename or not os.path.exists(filepath) or not os.path.isfile(filepath):
             link.respond(request_id, json.dumps({"status": STATUS_ERROR, "message": "File not found"}).encode('utf-8'))
