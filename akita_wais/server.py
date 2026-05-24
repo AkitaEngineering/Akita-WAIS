@@ -1,9 +1,10 @@
-import Reticulum as R
+import RNS as R
 import os
 import json
 import time
 import threading
 import zlib
+import hashlib
 from .common import (
     server_log as log, ASPECT_DISCOVERY, ASPECT_SERVICE, PROTOCOL_VERSION,
     ACTION_LIST, ACTION_GET, ACTION_SEARCH, ACTION_PEER_LIST,
@@ -65,14 +66,15 @@ class AkitaWAISServer:
         if interval <= 0: return
 
         app_data_dict = {
-            "name": self.server_config['server_info'].get("name", "Akita Server"),
-            "desc": self.server_config['server_info'].get("description", ""),
+            "name": self.server_config['server_info'].get("name", "Akita Server")[:30],
+            "desc": self.server_config['server_info'].get("description", "")[:60],
             "v": PROTOCOL_VERSION,
             "caps": ["zlib", "sha256"]
         }
         app_data_bytes = json.dumps(app_data_dict).encode('utf-8')
         if len(app_data_bytes) > MAX_ANNOUNCE_SIZE:
-             app_data_bytes = app_data_bytes[:MAX_ANNOUNCE_SIZE]
+             app_data_dict["desc"] = ""
+             app_data_bytes = json.dumps(app_data_dict).encode('utf-8')
 
         def announce_task():
             if not self.running: return
@@ -184,10 +186,18 @@ class AkitaWAISServer:
             file_size_original = os.path.getsize(filepath)
             
             if file_size_original > MAX_TRANSFER_RAM:
-                log.info(f"File {filename} too large for compression. Sending raw.")
-                with open(filepath, 'rb') as f:
-                    data_to_send = f.read() 
+                log.info(f"File {filename} too large for compression. Streaming raw.")
                 compressed = False
+                
+                # Calculate hash by streaming
+                sha256_hash = hashlib.sha256()
+                with open(filepath, 'rb') as f:
+                    for chunk in iter(lambda: f.read(65536), b""):
+                        sha256_hash.update(chunk)
+                sha256 = sha256_hash.hexdigest()
+                
+                data_size = file_size_original
+                data_to_send = None # Indicates streaming
             else:
                 with open(filepath, 'rb') as f:
                     raw_data = f.read()
@@ -201,21 +211,14 @@ class AkitaWAISServer:
                 else:
                     data_to_send = raw_data
                     compressed = False
-            
-            if compressed:
-                 # Hash the original for integrity verification
-                 if 'raw_data' in locals():
-                     sha256 = calculate_sha256(raw_data)
-                 else:
-                     with open(filepath, 'rb') as f:
-                         sha256 = calculate_sha256(f.read())
-            else:
-                 sha256 = calculate_sha256(data_to_send)
+                
+                sha256 = calculate_sha256(raw_data if compressed else data_to_send)
+                data_size = len(data_to_send)
 
             meta_response = {
                 "status": STATUS_FILE_META,
                 "filename": filename,
-                "size": len(data_to_send),
+                "size": data_size,
                 "original_size": file_size_original,
                 "compressed": compressed,
                 "sha256": sha256,
@@ -225,12 +228,23 @@ class AkitaWAISServer:
             link.respond(request_id, json.dumps(meta_response).encode('utf-8'))
 
             # Send Data chunks
-            chunk_size = R.Reticulum.MAX_PAYLOAD_SIZE // 2
-            for i in range(0, len(data_to_send), chunk_size):
-                if link.status != R.Link.ACTIVE: break
-                chunk = data_to_send[i:i+chunk_size]
-                link.send(chunk)
-                time.sleep(0.005) 
+            chunk_size = getattr(link, 'MDU', 384) # Use Link MDU if available, fallback to 384
+            
+            if data_to_send is not None:
+                # Send from memory
+                for i in range(0, len(data_to_send), chunk_size):
+                    if link.status != R.Link.ACTIVE: break
+                    chunk = data_to_send[i:i+chunk_size]
+                    link.send(chunk)
+                    time.sleep(0.005)
+            else:
+                # Stream from disk
+                with open(filepath, 'rb') as f:
+                    while link.status == R.Link.ACTIVE:
+                        chunk = f.read(chunk_size)
+                        if not chunk: break
+                        link.send(chunk)
+                        time.sleep(0.005)
             
             log.info(f"Sent {filename}")
 

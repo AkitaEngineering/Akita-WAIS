@@ -13,6 +13,10 @@ Akita WAIS is a decentralized Wide Area Information Server (WAIS) implementation
 
 * **Non-Blocking Architecture (New):**  File I/O and network transfers run in background threads, ensuring the server remains responsive to discovery requests even while transferring large files.
 
+* **Large File Streaming:**  Safely handles files of any size by streaming data directly from disk to the network, preventing memory exhaustion on low-resource hardware like Raspberry Pi.
+
+* **Robust Protocol Handling:**  Improved announcement payloads ensure compatibility and respects dynamic Reticulum Link constraints (MDU) for stable transfers.
+
 * **Decentralized Discovery:**  Servers automatically announce their presence using Reticulum Announce; clients automatically discover them without central servers.
 
 * **Reliable Communication:**  Uses Reticulum Links for robust request/response handling.

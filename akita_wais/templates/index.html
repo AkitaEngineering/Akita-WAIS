@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akita WAIS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="topbar">
+            <div class="logo">
+                <div class="logo-icon"></div>
+                <h1>Akita WAIS</h1>
+            </div>
+            <div class="status-indicator">
+                <span id="connection-status" class="status-text">Disconnected</span>
+                <div id="status-dot" class="dot red"></div>
+            </div>
+        </header>
+
+        <main class="content">
+            <!-- Sidebar: Server Discovery -->
+            <aside class="sidebar glass-panel">
+                <div class="sidebar-header">
+                    <h2>Network Nodes</h2>
+                    <button id="btn-refresh-servers" class="icon-button" title="Refresh">↻</button>
+                </div>
+                <div id="server-list" class="list-container">
+                    <div class="empty-state">Searching for nodes...</div>
+                </div>
+            </aside>
+
+            <!-- Main Area: File Browser -->
+            <section class="main-panel glass-panel">
+                <div class="panel-header">
+                    <h2 id="current-server-title">No Server Selected</h2>
+                    <div class="search-bar">
+                        <input type="text" id="search-input" placeholder="Search files..." disabled>
+                        <button id="btn-search" disabled>Search</button>
+                    </div>
+                </div>
+                
+                <div id="file-list" class="file-grid">
+                    <div class="empty-state">Connect to a server to view files.</div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Notification Toast -->
+        <div id="toast" class="toast hidden">
+            <span id="toast-message">Notification</span>
+        </div>
+    </div>
+    <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import Reticulum as R
+import RNS as R
 import os
 import json
 import time

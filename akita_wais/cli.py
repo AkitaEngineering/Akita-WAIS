@@ -2,7 +2,7 @@ import argparse
 import logging
 import time
 import sys
-import Reticulum as R
+import RNS as R
 from . import config as Cfg
 from . import identity as Id
 from . import server as Server
@@ -107,6 +107,8 @@ def main():
     
     cli_parser = subparsers.add_parser('client', help='Start WAIS Client')
 
+    web_parser = subparsers.add_parser('web', help='Start WAIS Web UI Client')
+
     args = parser.parse_args()
     config = Cfg.load_config(args.config)
     setup_logging(config['logging']['level'])
@@ -114,7 +116,7 @@ def main():
     # Init RNS
     rns_config = config['reticulum'].get('config_dir')
     reticulum = R.Reticulum(configdir=rns_config, loglevel=logging.WARNING)
-    common_log.info(f"Reticulum Active. Identity: {R.LOG_INIT_MSG}")
+    common_log.info("Reticulum Active.")
 
     instance = None
     try:
@@ -140,6 +142,18 @@ def main():
                 run_client_interface(instance)
             else:
                 common_log.error("Client start failed.")
+
+        elif args.mode == 'web':
+            from . import web_app
+            id_path = config['identity']['client_identity_path']
+            identity = Id.load_or_create_identity(id_path)
+            if not identity: sys.exit(1)
+
+            instance = Client.AkitaWAISClient(config, reticulum)
+            if instance.start(identity):
+                web_app.start_server(instance, host='0.0.0.0', port=5000)
+            else:
+                common_log.error("Web Client start failed.")
 
     except KeyboardInterrupt:
         common_log.info("Shutdown requested.")
