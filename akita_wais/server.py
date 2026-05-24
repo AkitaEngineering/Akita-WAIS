@@ -58,7 +58,7 @@ class AkitaWAISServer:
     def stop(self):
         self.running = False
         if self._announce_timer: self._announce_timer.cancel()
-        if self.announce_handler: self.announce_handler.cancel()
+        if self.announce_handler: R.Transport.deregister_announce_handler(self.announce_handler)
         log.info("Akita WAIS Server stopping.")
 
     def _start_announcing(self):
@@ -92,10 +92,16 @@ class AkitaWAISServer:
     def _start_discovery_listener(self):
         # Access discovery aspect from app_config to avoid KeyError
         discovery_aspect = self.app_config['discovery']['aspect']
-        self.announce_handler = R.Transport.listen_for_announces(
-            callback=self._handle_announce,
-            aspect_filter=discovery_aspect
-        )
+        
+        class ServerAnnounceHandler:
+            aspect_filter = discovery_aspect
+            def __init__(self, callback):
+                self.callback = callback
+            def received_announce(self, destination_hash, announced_identity, app_data):
+                self.callback(destination_hash, announced_identity, app_data)
+                
+        self.announce_handler = ServerAnnounceHandler(self._handle_announce)
+        R.Transport.register_announce_handler(self.announce_handler)
 
     def _handle_announce(self, destination_hash, announced_identity, app_data):
         dest_aspects = announced_identity.aspects_for_destination_hash(destination_hash)
