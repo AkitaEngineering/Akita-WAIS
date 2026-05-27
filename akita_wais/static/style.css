@@ -60,13 +60,15 @@ body {
 
 .logo {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
 }
 
 .logo h1 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    letter-spacing: -0.5px;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
 }
 
 .status-indicator {
