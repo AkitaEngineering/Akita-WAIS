@@ -92,6 +92,36 @@ def _format_reticulum_init_error(config_dir, exc):
     )
     return " ".join(details)
 
+def _get_repo_root():
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+def _get_repo_venv_python():
+    return os.path.join(_get_repo_root(), "venv", "bin", "python")
+
+def _rerun_web_mode_with_repo_venv():
+    venv_python = _get_repo_venv_python()
+    current_python = os.path.abspath(sys.executable)
+    script_path = os.path.abspath(sys.argv[0]) if sys.argv and sys.argv[0] else os.path.join(_get_repo_root(), "run.py")
+
+    if (
+        os.path.isfile(venv_python)
+        and os.access(venv_python, os.X_OK)
+        and os.path.abspath(venv_python) != current_python
+        and os.environ.get("AKITA_WAIS_VENV_REEXEC") != "1"
+    ):
+        common_log.warning(
+            f"Flask is not available in {current_python}. Re-running web mode with {venv_python}."
+        )
+        env = os.environ.copy()
+        env["AKITA_WAIS_VENV_REEXEC"] = "1"
+        os.execvpe(venv_python, [venv_python, script_path, *sys.argv[1:]], env)
+
+    common_log.error(
+        f"Web mode requires Flask in the active Python interpreter ({current_python}). "
+        f"Install dependencies with '{current_python} -m pip install -r requirements.txt' or run '{venv_python} {script_path} web'."
+    )
+    sys.exit(1)
+
 def setup_logging(level_str='INFO'):
     level = getattr(logging, level_str.upper(), logging.INFO)
     logging.basicConfig(
@@ -248,7 +278,12 @@ def main():
                 common_log.error("Client start failed.")
 
         elif args.mode == 'web':
-            from . import web_app
+            try:
+                from . import web_app
+            except ModuleNotFoundError as exc:
+                if exc.name == 'flask':
+                    _rerun_web_mode_with_repo_venv()
+                raise
             id_path = config['identity']['client_identity_path']
             identity = Id.load_or_create_identity(id_path)
             if not identity: sys.exit(1)
