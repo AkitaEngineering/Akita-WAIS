@@ -9,7 +9,7 @@ from .common import (
     server_log as log, ASPECT_DISCOVERY, ASPECT_SERVICE, PROTOCOL_VERSION,
     ACTION_LIST, ACTION_GET, ACTION_SEARCH, ACTION_PEER_LIST,
     STATUS_OK, STATUS_ERROR, STATUS_FILE_META, MAX_ANNOUNCE_SIZE,
-    MAX_TRANSFER_RAM, calculate_sha256
+    MAX_TRANSFER_RAM, calculate_sha256, split_destination_name
 )
 
 class AkitaWAISServer:
@@ -39,11 +39,14 @@ class AkitaWAISServer:
             log.critical("Server cannot start without a valid Identity.")
             return False
 
+        service_app_name, service_aspects = split_destination_name(ASPECT_SERVICE)
+
         self.service_destination = R.Destination(
             self.identity,
             R.Destination.IN,
-            R.Destination.TYPE_SINGLE,
-            ASPECT_SERVICE,
+            R.Destination.SINGLE,
+            service_app_name,
+            *service_aspects,
         )
 
         self.service_destination.set_link_established_callback(self._link_established)
@@ -51,7 +54,7 @@ class AkitaWAISServer:
         self._start_announcing()
 
         log.info(f"Akita WAIS Server Service Ready.")
-        log.info(f"Address: {R.prettyhexle(self.service_destination.hash)}")
+        log.info(f"Address: {R.prettyhexrep(self.service_destination.hash)}")
         self.running = True
         return True
 
@@ -108,7 +111,7 @@ class AkitaWAISServer:
         if ASPECT_SERVICE not in dest_aspects: return
         if announced_identity.hash == self.identity.hash: return
 
-        server_hash_hex = R.prettyhexle(announced_identity.hash)
+        server_hash_hex = R.prettyhexrep(announced_identity.hash)
         try:
             info = json.loads(app_data.decode('utf-8'))
             with self._lock:
@@ -122,7 +125,7 @@ class AkitaWAISServer:
             pass
 
     def _link_established(self, link):
-        log.info(f"Link established from {R.prettyhexle(link.destination.hash)}")
+        log.info(f"Link established from {R.prettyhexrep(link.destination.hash)}")
         link.set_resource_strategy(R.Resource.ACCEPT_ALL)
         link.set_resource_timeout(15) 
         link.set_request_handler(self._handle_request)

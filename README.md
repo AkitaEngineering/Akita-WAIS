@@ -44,8 +44,13 @@ Akita WAIS is a decentralized Wide Area Information Server (WAIS) implementation
     ```bash
     pip install -r requirements.txt
     ```
-3.  **Ensure Reticulum is Running:** Make sure rnsd is configured with appropriate interfaces (e.g., AutoInterface for LAN or LoRaInterface) and running on your system.
-4.  **Configure Akita WAIS (Optional):** Copy config.json (if provided) or modify the default settings in akita_wais/config.py if needed. The default configuration usually works out of the box.d.
+3.  **Ensure Reticulum is Running:** Make sure your Reticulum config only enables interfaces that actually exist on the host. If your default `~/.reticulum/config` includes a serial KISS interface like `/dev/ttyACM0`, WAIS startup will fail until that device path is corrected or the interface is disabled.
+4.  **Configure Akita WAIS:** Copy `config.example.json` to `config.json` and adjust it for your environment.
+    ```bash
+    cp config.example.json config.json
+    ```
+    * Set `reticulum.config_dir` if you want WAIS to use a dedicated Reticulum config directory instead of `~/.reticulum`.
+    * `test_config.json` is a minimal example that points WAIS at `/tmp/rns_test`.
 
 ## Usage
 
@@ -57,6 +62,7 @@ Akita WAIS is a decentralized Wide Area Information Server (WAIS) implementation
     ```
     * Note: The wais_data directory will be created automatically. Place files you want to share in this folder.
     * Use `python run.py server --no-announce` to run without announcing (for testing).
+    * If startup fails with a missing serial device, fix the enabled interfaces in your Reticulum config or point `reticulum.config_dir` at a different config directory in `config.json`.
 
 **Running a Client:**
 

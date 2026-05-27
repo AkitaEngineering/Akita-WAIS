@@ -29,6 +29,12 @@ STATUS_FILE_META = "file_meta"
 MAX_ANNOUNCE_SIZE = 128
 MAX_TRANSFER_RAM = 20 * 1024 * 1024  # 20MB limit for in-memory compression
 
+def split_destination_name(destination_name):
+    parts = destination_name.split('.')
+    if len(parts) == 1:
+        return destination_name, ()
+    return parts[0], tuple(parts[1:])
+
 def calculate_sha256(data_bytes):
     """Helper to calculate SHA256 hash of bytes for integrity verification."""
     sha256_hash = hashlib.sha256()

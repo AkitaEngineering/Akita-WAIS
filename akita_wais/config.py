@@ -42,4 +42,6 @@ def load_config(config_path="config.json"):
       common_log.info(f"Loaded configuration from {config_path}")
     except Exception as e:
       common_log.error(f"Error loading config file {config_path}: {e}. Using defaults.")
+  elif config_path:
+    common_log.warning(f"Configuration file {config_path} not found. Using defaults.")
   return config

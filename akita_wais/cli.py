@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import time
 import sys
 import RNS as R
@@ -8,6 +9,88 @@ from . import identity as Id
 from . import server as Server
 from . import client as Client
 from .common import common_log, STATUS_OK
+
+def _get_reticulum_config_file(config_dir):
+    if config_dir:
+        return os.path.join(os.path.expanduser(config_dir), "config")
+    return os.path.expanduser("~/.reticulum/config")
+
+def _reticulum_value_is_enabled(value):
+    return value.strip().lower() not in {"no", "false", "0", "off", "disabled"}
+
+def _normalize_reticulum_path(path_value):
+    return os.path.expandvars(os.path.expanduser(path_value.strip().strip('"').strip("'")))
+
+def _find_missing_reticulum_ports(config_dir):
+    config_file = _get_reticulum_config_file(config_dir)
+    if not os.path.isfile(config_file):
+        return config_file, []
+
+    interfaces = []
+    current_interface = None
+    in_interfaces_section = False
+
+    def flush_current_interface():
+        nonlocal current_interface
+        if current_interface:
+            interfaces.append(current_interface)
+            current_interface = None
+
+    with open(config_file, 'r') as config_handle:
+        for raw_line in config_handle:
+            line = raw_line.split("#", 1)[0].strip()
+            if not line:
+                continue
+
+            if line.startswith("[[") and line.endswith("]]"):
+                if in_interfaces_section:
+                    flush_current_interface()
+                    current_interface = {"name": line[2:-2].strip()}
+                continue
+
+            if line.startswith("[") and line.endswith("]") and not line.startswith("[["):
+                flush_current_interface()
+                in_interfaces_section = line[1:-1].strip().lower() == "interfaces"
+                continue
+
+            if in_interfaces_section and current_interface and "=" in line:
+                key, value = line.split("=", 1)
+                current_interface[key.strip().lower()] = value.strip()
+
+    flush_current_interface()
+
+    missing_ports = []
+    for interface in interfaces:
+        if not _reticulum_value_is_enabled(interface.get("enabled", "yes")):
+            continue
+
+        port = interface.get("port")
+        if not port:
+            continue
+
+        normalized_port = _normalize_reticulum_path(port)
+        if normalized_port.startswith(os.sep) or port.strip().startswith("~"):
+            if not os.path.exists(normalized_port):
+                missing_ports.append((interface.get("name", "<unnamed>"), normalized_port))
+
+    return config_file, missing_ports
+
+def _format_reticulum_init_error(config_dir, exc):
+    config_file = _get_reticulum_config_file(config_dir)
+    details = [
+        f"Reticulum failed to initialize using {config_file}.",
+        f"Underlying error: {exc}",
+    ]
+
+    if not config_dir:
+        details.append(
+            "Akita WAIS is using the default Reticulum config because reticulum.config_dir is not set in the WAIS config."
+        )
+
+    details.append(
+        "Check the enabled interfaces in that Reticulum config and disable or correct any unavailable devices, or set reticulum.config_dir to a different Reticulum config directory."
+    )
+    return " ".join(details)
 
 def setup_logging(level_str='INFO'):
     level = getattr(logging, level_str.upper(), logging.INFO)
@@ -115,7 +198,28 @@ def main():
 
     # Init RNS
     rns_config = config['reticulum'].get('config_dir')
-    reticulum = R.Reticulum(configdir=rns_config, loglevel=logging.WARNING)
+    rns_config_file, missing_ports = _find_missing_reticulum_ports(rns_config)
+    if missing_ports:
+        missing_port_list = ", ".join(
+            f"{name} -> {port}" for name, port in missing_ports
+        )
+        message = [
+            f"Reticulum config {rns_config_file} enables unavailable device paths: {missing_port_list}.",
+            "Disable or correct those interfaces, or set reticulum.config_dir in your WAIS config to a different Reticulum config directory.",
+        ]
+        if not rns_config:
+            message.insert(
+                1,
+                "Akita WAIS is using the default Reticulum config because reticulum.config_dir is not set in the WAIS config.",
+            )
+        common_log.error(" ".join(message))
+        sys.exit(1)
+
+    try:
+        reticulum = R.Reticulum(configdir=rns_config, loglevel=logging.WARNING)
+    except Exception as exc:
+        common_log.error(_format_reticulum_init_error(rns_config, exc))
+        sys.exit(1)
     common_log.info("Reticulum Active.")
 
     instance = None

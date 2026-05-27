@@ -9,7 +9,8 @@ import zlib
 from .common import (
     client_log as log, ASPECT_DISCOVERY, ASPECT_SERVICE,
     ACTION_LIST, ACTION_GET, ACTION_SEARCH, ACTION_PEER_LIST,
-    STATUS_OK, STATUS_ERROR, STATUS_FILE_META, calculate_sha256
+    STATUS_OK, STATUS_ERROR, STATUS_FILE_META, calculate_sha256,
+    split_destination_name
 )
 
 class AkitaWAISClient:
@@ -74,7 +75,7 @@ class AkitaWAISClient:
     def _handle_announce(self, destination_hash, announced_identity, app_data):
         dest_aspects = announced_identity.aspects_for_destination_hash(destination_hash)
         if ASPECT_SERVICE not in dest_aspects: return
-        server_hash_hex = R.prettyhexle(announced_identity.hash)
+        server_hash_hex = R.prettyhexrep(announced_identity.hash)
         try:
             info = json.loads(app_data.decode('utf-8'))
             with self._lock:
@@ -96,14 +97,17 @@ class AkitaWAISClient:
     def select_server(self, server_info):
         server_hash_hex = server_info['hash']
         if self._active_link and self._active_link.status != R.Link.CLOSED:
-            if R.prettyhexle(self._active_link.destination.hash) == server_hash_hex: return True
+            if R.prettyhexrep(self._active_link.destination.hash) == server_hash_hex: return True
             self._active_link.teardown()
 
         server_identity = R.Identity.recall(bytes.fromhex(server_hash_hex))
         if not server_identity: return False
 
+        service_app_name, service_aspects = split_destination_name(ASPECT_SERVICE)
+
         server_destination = R.Destination(
-            server_identity, R.Destination.OUT, R.Destination.TYPE_SINGLE, ASPECT_SERVICE
+            server_identity, R.Destination.OUT, R.Destination.SINGLE,
+            service_app_name, *service_aspects
         )
 
         log.info(f"Connecting to {server_info['name']}...")
